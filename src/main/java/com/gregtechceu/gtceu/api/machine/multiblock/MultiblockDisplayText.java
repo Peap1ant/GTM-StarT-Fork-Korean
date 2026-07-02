@@ -27,9 +27,8 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
-import org.jetbrains.annotations.Nullable;
-
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
