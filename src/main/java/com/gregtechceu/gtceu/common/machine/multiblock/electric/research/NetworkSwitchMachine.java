@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Block;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -32,6 +33,13 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public class NetworkSwitchMachine extends DataBankMachine implements IOpticalComputationProvider {
 
     public static final int EUT_PER_HATCH = GTValues.VA[GTValues.IV];
+
+    @Getter
+    @Setter
+    private int receiversCount;
+    @Getter
+    @Setter
+    private int transmittersCount;
 
     private final MultipleComputationHandler computationHandler = new MultipleComputationHandler(this);
 
@@ -52,14 +60,16 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                 ++transmitters;
             }
         }
-        return GTValues.VA[GTValues.IV] * (receivers + transmitters);
+        return EUT_PER_HATCH * (receivers + transmitters);
     }
 
     @Override
     public void onStructureFormed() {
         super.onStructureFormed();
         List<IOpticalComputationHatch> receivers = new ArrayList<>();
+        this.setReceiversCount(receivers.size());
         List<IOpticalComputationHatch> transmitters = new ArrayList<>();
+        this.setTransmittersCount(transmitters.size());
         for (var part : this.getParts()) {
             Block block = part.self().getBlockState().getBlock();
             List<IOpticalComputationHatch> list;
@@ -90,6 +100,8 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     public void onStructureInvalid() {
         super.onStructureInvalid();
         computationHandler.reset();
+        this.setReceiversCount(0);
+        this.setTransmittersCount(0);
     }
 
     @Override
@@ -116,6 +128,10 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
         return true;
     }
 
+    public int getMaxCWUtForDisplay() {
+        return computationHandler.getMaxCWUtForDisplay();
+    }
+
     @Override
     public void addDisplayText(List<Component> textList) {
         MultiblockDisplayText.builder(textList, isFormed())
@@ -125,6 +141,19 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                         "gtceu.multiblock.idling",
                         "gtceu.multiblock.data_bank.providing")
                 .addEnergyUsageExactLine(getEnergyUsage())
+                .addCustom((components) -> {
+                    if (isFormed()) {
+                        components.add(Component.translatable("gtceu.multiblock.network_switch.receivers",
+                                this.getReceiversCount()));
+                    }
+                }) // Receivers
+                .addCustom((components) -> {
+                    if (isFormed()) {
+                        components.add(Component
+                                .translatable("gtceu.multiblock.network_switch.transmitters",
+                                        this.getTransmittersCount()));
+                    }
+                }) // Transmitters
                 .addComputationUsageLine(computationHandler.getMaxCWUtForDisplay())
                 .addWorkingStatusLine();
     }
