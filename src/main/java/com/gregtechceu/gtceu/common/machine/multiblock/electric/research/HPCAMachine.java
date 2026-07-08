@@ -79,6 +79,10 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     @Persisted
     @DescSynced
     private final HPCAGridHandler hpcaHandler;
+    @Getter
+    private final int componentGridSize;
+    @Getter
+    private final ResourceTexture componentOutlineTexture;
 
     private boolean hasNotEnoughEnergy;
 
@@ -90,8 +94,11 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     @Nullable
     protected TickableSubscription tickSubs;
 
-    public HPCAMachine(IMachineBlockEntity holder, Object... args) {
-        super(holder, args);
+    public HPCAMachine(IMachineBlockEntity holder, int componentGridSize,
+                       @NotNull ResourceTexture componentOutlineTexture) {
+        super(holder);
+        this.componentGridSize = componentGridSize;
+        this.componentOutlineTexture = componentOutlineTexture;
         this.energyContainer = new EnergyContainerList(new ArrayList<>());
         this.progressSupplier = new TimedProgressSupplier(200, 47, false);
         this.hpcaHandler = new HPCAGridHandler(this);
@@ -253,14 +260,23 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     @Override
     public Widget createUIWidget() {
         WidgetGroup builder = (WidgetGroup) super.createUIWidget();
+        int cellSize = 13;
+        int spacing = 2;
+        int gridSize = hpcaHandler.getGridSize();
+        int gridBoxSize = gridSize * cellSize + Math.max(0, gridSize - 1) * spacing;
+        int outlineWidth = Math.max(47, gridBoxSize + 4);
+        int outlineHeight = Math.max(47, gridBoxSize + 4);
+        int outlineX = 74;
+        int outlineY = 57;
+
         // Create the hover grid
         builder.addWidget(new ExtendedProgressWidget(
                 () -> hpcaHandler.getAllocatedCWUt() > 0 ? progressSupplier.getAsDouble() : 0,
-                74, 57, 47, 47, GuiTextures.HPCA_COMPONENT_OUTLINE)
+                outlineX, outlineY, outlineWidth, outlineHeight, componentOutlineTexture)
                 .setServerTooltipSupplier(hpcaHandler::addInfo)
                 .setFillDirection(ProgressTexture.FillDirection.LEFT_TO_RIGHT));
-        int startX = 76;
-        int startY = 59;
+        int startX = outlineX + 2 + (outlineWidth - gridBoxSize) / 2;
+        int startY = outlineY + 2 + (outlineHeight - gridBoxSize) / 2;
 
         // we need to know what components we have on the client
         if (getLevel().isClientSide) {
@@ -271,11 +287,14 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
                 hpcaHandler.clearClientComponents();
             }
         }
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                final int index = i * 3 + j;
+        for (int i = 0; i < gridSize; i++) {
+            for (int j = 0; j < gridSize; j++) {
+                final int index = i * gridSize + j;
                 Supplier<IGuiTexture> textureSupplier = () -> hpcaHandler.getComponentTexture(index);
-                builder.addWidget(new ImageWidget(startX + (15 * j), startY + (15 * i), 13, 13, textureSupplier));
+                builder.addWidget(new ImageWidget(
+                        startX + (cellSize + spacing) * j,
+                        startY + (cellSize + spacing) * i,
+                        cellSize, cellSize, textureSupplier));
             }
         }
         return builder;
@@ -391,6 +410,8 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
         private final List<IHPCAComponentHatch> components = new ObjectArrayList<>();
         private final Set<IHPCACoolantProvider> coolantProviders = new ObjectOpenHashSet<>();
         private final Set<IHPCAComputationProvider> computationProviders = new ObjectOpenHashSet<>();
+        @Getter
+        private final int gridSize;
         private int numBridges;
 
         // transaction info
@@ -407,6 +428,7 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
 
         public HPCAGridHandler(@Nullable HPCAMachine controller) {
             this.controller = controller;
+            this.gridSize = controller != null ? controller.getComponentGridSize() : 3;
         }
 
         public void onStructureForm(Collection<IHPCAComponentHatch> components) {
@@ -724,11 +746,11 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
 
             if (components.isEmpty()) {
                 BlockPos testPos = pos
-                        .relative(frontFacing.getOpposite(), 3)
-                        .relative(relativeUp, 3);
+                        .relative(frontFacing.getOpposite(), gridSize)
+                        .relative(relativeUp, gridSize);
 
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
+                for (int i = 0; i < gridSize; i++) {
+                    for (int j = 0; j < gridSize; j++) {
                         BlockPos tempPos = testPos.relative(frontFacing, j).relative(relativeUp.getOpposite(), i);
                         BlockEntity be = world.getBlockEntity(tempPos);
                         if (be instanceof IHPCAComponentHatch hatch) {
