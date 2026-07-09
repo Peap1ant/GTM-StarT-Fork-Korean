@@ -331,6 +331,26 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
                 .addWorkingStatusLine();
     }
 
+    public MutableComponent getCWUtProductionComponent() {
+        return hpcaHandler.getCWUtProductionComponent();
+    }
+
+    public MutableComponent getCoolingComponent() {
+        return hpcaHandler.getCoolingComponent();
+    }
+
+    public MutableComponent getCoolingAvailableComponent() {
+        return hpcaHandler.getCoolingAvailableComponent();
+    }
+
+    public MutableComponent getCoolantRequiredComponent() {
+        return hpcaHandler.getCoolantRequiredComponent();
+    }
+
+    public MutableComponent getBridgingComponent() {
+        return hpcaHandler.getBridgingComponent();
+    }
+
     private ChatFormatting getDisplayTemperatureColor() {
         if (temperature < 500) {
             return ChatFormatting.GREEN;
@@ -665,24 +685,30 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
             return maxCoolant;
         }
 
-        public void addInfo(List<Component> textList) {
-            // Max Computation
+        public MutableComponent getCWUtProductionComponent() {
             MutableComponent data = Component.literal(Integer.toString(getMaxCWUt())).withStyle(ChatFormatting.AQUA);
-            textList.add(Component.translatable("gtceu.multiblock.hpca.info_max_computation", data)
-                    .withStyle(ChatFormatting.GRAY));
+            return Component.translatable("gtceu.multiblock.hpca.info_max_computation", data)
+                    .withStyle(ChatFormatting.GRAY);
+        }
 
-            // Cooling
+        public MutableComponent getCoolingComponent() {
             ChatFormatting coolingColor = getMaxCoolingAmount() < getMaxCoolingDemand() ? ChatFormatting.RED :
                     ChatFormatting.GREEN;
-            data = Component.literal(Integer.toString(getMaxCoolingDemand())).withStyle(coolingColor);
-            textList.add(Component.translatable("gtceu.multiblock.hpca.info_max_cooling_demand", data)
-                    .withStyle(ChatFormatting.GRAY));
+            MutableComponent data = Component.literal(Integer.toString(getMaxCoolingDemand())).withStyle(coolingColor);
+            return Component.translatable("gtceu.multiblock.hpca.info_max_cooling_demand", data)
+                    .withStyle(ChatFormatting.GRAY);
+        }
 
-            data = Component.literal(Integer.toString(getMaxCoolingAmount())).withStyle(coolingColor);
-            textList.add(Component.translatable("gtceu.multiblock.hpca.info_max_cooling_available", data)
-                    .withStyle(ChatFormatting.GRAY));
+        public MutableComponent getCoolingAvailableComponent() {
+            ChatFormatting coolingColor = getMaxCoolingAmount() < getMaxCoolingDemand() ? ChatFormatting.RED :
+                    ChatFormatting.GREEN;
+            MutableComponent data = Component.literal(Integer.toString(getMaxCoolingAmount())).withStyle(coolingColor);
+            return Component.translatable("gtceu.multiblock.hpca.info_max_cooling_available", data)
+                    .withStyle(ChatFormatting.GRAY);
+        }
 
-            // Coolant Required
+        public MutableComponent getCoolantRequiredComponent() {
+            MutableComponent data;
             if (getMaxCoolantDemand() > 0) {
                 data = Component.translatable("gtceu.universal.liters", getMaxCoolantDemand())
                         .withStyle(ChatFormatting.YELLOW).append(" ");
@@ -692,17 +718,34 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
             } else {
                 data = Component.literal("0").withStyle(ChatFormatting.GREEN);
             }
-            textList.add(Component.translatable("gtceu.multiblock.hpca.info_max_coolant_required", data)
-                    .withStyle(ChatFormatting.GRAY));
+            return Component.translatable("gtceu.multiblock.hpca.info_max_coolant_required", data)
+                    .withStyle(ChatFormatting.GRAY);
+        }
+
+        public MutableComponent getBridgingComponent() {
+            if (numBridges > 0) {
+                return Component.translatable("gtceu.multiblock.hpca.info_bridging_enabled")
+                        .withStyle(ChatFormatting.GREEN);
+            } else {
+                return Component.translatable("gtceu.multiblock.hpca.info_bridging_disabled")
+                        .withStyle(ChatFormatting.RED);
+            }
+        }
+
+        public void addInfo(List<Component> textList) {
+            // Max Computation
+            textList.add(this.getCWUtProductionComponent());
+
+            // Cooling
+            textList.add(this.getCoolingComponent());
+
+            textList.add(this.getCoolingAvailableComponent());
+
+            // Coolant Required
+            textList.add(this.getCoolantRequiredComponent());
 
             // Bridging
-            if (numBridges > 0) {
-                textList.add(Component.translatable("gtceu.multiblock.hpca.info_bridging_enabled")
-                        .withStyle(ChatFormatting.GREEN));
-            } else {
-                textList.add(Component.translatable("gtceu.multiblock.hpca.info_bridging_disabled")
-                        .withStyle(ChatFormatting.RED));
-            }
+            textList.add(this.getBridgingComponent());
         }
 
         public void addWarnings(List<Component> textList) {
