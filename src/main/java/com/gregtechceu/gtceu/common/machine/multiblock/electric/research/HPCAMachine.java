@@ -94,8 +94,7 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     @Nullable
     protected TickableSubscription tickSubs;
 
-    public HPCAMachine(IMachineBlockEntity holder, int componentGridSize,
-                       @NotNull ResourceTexture componentOutlineTexture) {
+    public HPCAMachine(IMachineBlockEntity holder, int componentGridSize, ResourceTexture componentOutlineTexture) {
         super(holder);
         this.componentGridSize = componentGridSize;
         this.componentOutlineTexture = componentOutlineTexture;
@@ -142,6 +141,11 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
         if (getLevel() instanceof ServerLevel serverLevel) {
             serverLevel.getServer().tell(new TickTask(0, this::updateTickSubscription));
         }
+    }
+
+    @Override
+    public void onClientStructureInvalid() {
+        this.hpcaHandler.onStructureInvalidate();
     }
 
     @Override
@@ -260,23 +264,27 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     @Override
     public Widget createUIWidget() {
         WidgetGroup builder = (WidgetGroup) super.createUIWidget();
+
+        int centerX = builder.getSizeWidth() / 2;
         int cellSize = 13;
-        int spacing = 2;
+        int spacing = 1;
+        int margin = 1;
+
         int gridSize = hpcaHandler.getGridSize();
-        int gridBoxSize = gridSize * cellSize + Math.max(0, gridSize - 1) * spacing;
-        int outlineWidth = Math.max(47, gridBoxSize + 4);
-        int outlineHeight = Math.max(47, gridBoxSize + 4);
-        int outlineX = 74;
-        int outlineY = 57;
+        int gridBoxSize = margin * 2 + gridSize * (cellSize + spacing * 2);
+
+        int outlineX = centerX - gridBoxSize / 2;
+        int outlineY = 44;
 
         // Create the hover grid
         builder.addWidget(new ExtendedProgressWidget(
                 () -> hpcaHandler.getAllocatedCWUt() > 0 ? progressSupplier.getAsDouble() : 0,
-                outlineX, outlineY, outlineWidth, outlineHeight, componentOutlineTexture)
+                outlineX, outlineY, gridBoxSize, gridBoxSize, componentOutlineTexture)
                 .setServerTooltipSupplier(hpcaHandler::addInfo)
                 .setFillDirection(ProgressTexture.FillDirection.LEFT_TO_RIGHT));
-        int startX = outlineX + 2 + (outlineWidth - gridBoxSize) / 2;
-        int startY = outlineY + 2 + (outlineHeight - gridBoxSize) / 2;
+
+        int startX = outlineX + margin + spacing;
+        int startY = outlineY + margin + spacing;
 
         // we need to know what components we have on the client
         if (getLevel().isClientSide) {
@@ -287,13 +295,14 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
                 hpcaHandler.clearClientComponents();
             }
         }
+
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
                 final int index = i * gridSize + j;
                 Supplier<IGuiTexture> textureSupplier = () -> hpcaHandler.getComponentTexture(index);
                 builder.addWidget(new ImageWidget(
-                        startX + (cellSize + spacing) * j,
-                        startY + (cellSize + spacing) * i,
+                        startX + (cellSize + spacing * 2) * j,
+                        startY + (cellSize + spacing * 2) * i,
                         cellSize, cellSize, textureSupplier));
             }
         }
