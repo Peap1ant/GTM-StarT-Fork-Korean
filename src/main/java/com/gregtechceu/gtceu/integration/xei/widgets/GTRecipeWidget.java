@@ -15,20 +15,16 @@ import com.gregtechceu.gtceu.api.recipe.content.Content;
 import com.gregtechceu.gtceu.api.recipe.ingredient.EnergyStack;
 import com.gregtechceu.gtceu.common.data.GTRecipeTypes;
 import com.gregtechceu.gtceu.common.machine.multiblock.electric.FusionReactorMachine;
-import com.gregtechceu.gtceu.common.recipe.condition.DimensionCondition;
-import com.gregtechceu.gtceu.common.recipe.condition.ResearchCondition;
 import com.gregtechceu.gtceu.data.lang.LangHandler;
 import com.gregtechceu.gtceu.utils.FormattingUtil;
 import com.gregtechceu.gtceu.utils.GTUtil;
 
 import com.lowdragmc.lowdraglib.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.*;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -42,7 +38,6 @@ import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static com.gregtechceu.gtceu.api.GTValues.*;
@@ -138,19 +133,20 @@ public class GTRecipeWidget extends WidgetGroup {
                     tier);
         }
 
-        for (RecipeCondition condition : recipe.conditions) {
-            if (condition.getTooltips() == null) continue;
-            if (condition instanceof ResearchCondition) continue;
-            if (condition instanceof DimensionCondition dimCondition) {
-                addWidget(dimCondition
-                        .setupDimensionMarkers(recipe.recipeType.getRecipeUI().getJEISize().width - xOffset - 44,
-                                recipe.recipeType.getRecipeUI().getJEISize().height - 32)
-                        .setBackgroundTexture(IGuiTexture.EMPTY));
-            } else addWidget(new LabelWidget(3 - xOffset, yOffset += LINE_HEIGHT, condition.getTooltips().getString()));
+        for (RecipeCondition<?> condition : recipe.conditions) {
+            if (condition.getTooltips() != null && condition.isXeiVisible()) {
+                addWidget(new LabelWidget(3 - xOffset, yOffset += LINE_HEIGHT, condition.getTooltips().getString()));
+            }
+
+            var widget = condition.createCustomXeiWidget(this, recipe);
+            if (widget != null) addWidget(widget);
         }
-        for (Function<CompoundTag, String> dataInfo : recipe.recipeType.getDataInfos()) {
-            addWidget(new LabelWidget(3 - xOffset, yOffset += LINE_HEIGHT, dataInfo.apply(recipe.data)));
+
+        var dataInfoConfiguration = new GTRecipeType.CustomDataInfoConfiguration(recipe);
+        for (var dataInfo : recipe.recipeType.getDataInfos()) {
+            addWidget(new LabelWidget(3 - xOffset, yOffset += LINE_HEIGHT, dataInfo.apply(dataInfoConfiguration)));
         }
+
         recipe.recipeType.getRecipeUI().appendJEIUI(recipe, this);
     }
 
