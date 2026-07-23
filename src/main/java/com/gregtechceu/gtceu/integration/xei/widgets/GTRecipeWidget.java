@@ -143,8 +143,11 @@ public class GTRecipeWidget extends WidgetGroup {
         }
 
         var dataInfoConfiguration = new GTRecipeType.CustomDataInfoConfiguration(recipe);
-        for (var dataInfo : recipe.recipeType.getDataInfos()) {
-            addWidget(new LabelWidget(3 - xOffset, yOffset += LINE_HEIGHT, dataInfo.apply(dataInfoConfiguration)));
+        for (var dataInfoBuilder : recipe.recipeType.getDataInfos()) {
+            var dataInfo = dataInfoBuilder.apply(dataInfoConfiguration);
+            var widget = new LabelWidget(3 - xOffset, yOffset += LINE_HEIGHT, dataInfo.label());
+            if (dataInfo.consumer() != null) dataInfo.consumer().accept(widget, this);
+            addWidget(widget);
         }
 
         recipe.recipeType.getRecipeUI().appendJEIUI(recipe, this);
