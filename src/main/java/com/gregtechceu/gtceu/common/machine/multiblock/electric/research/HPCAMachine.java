@@ -348,6 +348,10 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
         return hpcaHandler.getMaxCoolingDemand();
     }
 
+    public int getMaxCoolantDemand() {
+        return hpcaHandler.getMaxCoolantDemand();
+    }
+
     public int getNumBridges() {
         return hpcaHandler.getNumBridges();
     }

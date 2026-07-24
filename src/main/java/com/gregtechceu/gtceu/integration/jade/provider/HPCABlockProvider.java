@@ -37,12 +37,13 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
                 int numBridges = blockAccessor.getServerData().getInt("numBridges");
                 int maxCoolingDemand = blockAccessor.getServerData().getInt("maxCoolingDemand");
                 int maxCoolingAmount = blockAccessor.getServerData().getInt("maxCoolingAmount");
+                int maxCoolantAmount = blockAccessor.getServerData().getInt("maxCoolantAmount");
 
                 Component voltageText = getEnergyUsage(energyUsage);
                 Component cwutInfo = getCWUtProductionComponent(CWUt);
                 Component coolingInfo = getCoolingComponent(maxCoolingAmount, maxCoolingDemand);
                 Component coolingAvailableInfo = getCoolingAvailableComponent(maxCoolingAmount, maxCoolingDemand);
-                Component coolantRequiredInfo = getCoolantRequiredComponent(maxCoolingDemand);
+                Component coolantRequiredInfo = getCoolantRequiredComponent(maxCoolantAmount);
                 Component bridgingInfo = getBridgingComponent(numBridges);
 
                 iTooltip.add(voltageText);
@@ -65,6 +66,7 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
                 compoundTag.putInt("numBridges", hpca.getNumBridges());
                 compoundTag.putInt("maxCoolingDemand", hpca.getMaxCoolingDemand());
                 compoundTag.putInt("maxCoolingAmount", hpca.getMaxCoolingAmount());
+                compoundTag.putInt("maxCoolantDemand", hpca.getMaxCoolantDemand());
             }
         }
     }
