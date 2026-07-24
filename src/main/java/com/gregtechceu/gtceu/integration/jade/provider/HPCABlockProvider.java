@@ -9,8 +9,10 @@ import com.gregtechceu.gtceu.common.machine.multiblock.electric.research.HPCAMac
 import com.gregtechceu.gtceu.utils.FormattingUtil;
 import com.gregtechceu.gtceu.utils.GTUtil;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 
 import snownee.jade.api.BlockAccessor;
@@ -32,18 +34,17 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
             MetaMachine machine = blockEntity.getMetaMachine();
             if (machine instanceof HPCAMachine hpca) {
                 long energyUsage = blockAccessor.getServerData().getLong("energyUsage");
-                String energyFormatted = FormattingUtil.formatNumbers(energyUsage);
-                // wrap in text component to keep it from being formatted
-                Component voltageName = Component.literal(GTValues.VNF[GTUtil.getTierByVoltage(energyUsage)]);
-                Component voltageText = Component.translatable(
-                        "gtceu.multiblock.energy_consumption",
-                        energyFormatted,
-                        voltageName);
-                Component cwutInfo = hpca.getCWUtProductionComponent();
-                Component coolingInfo = hpca.getCoolingComponent();
-                Component coolingAvailableInfo = hpca.getCoolingAvailableComponent();
-                Component coolantRequiredInfo = hpca.getCoolantRequiredComponent();
-                Component bridgingInfo = hpca.getBridgingComponent();
+                int CWUt = blockAccessor.getServerData().getInt("CWUt");
+                int numBridges = blockAccessor.getServerData().getInt("numBridges");
+                int maxCoolingDemand = blockAccessor.getServerData().getInt("maxCoolingDemand");
+                int maxCoolingAmount = blockAccessor.getServerData().getInt("maxCoolingAmount");
+
+                Component voltageText = getEnergyUsage(energyUsage);
+                Component cwutInfo = getCWUtProductionComponent(CWUt);
+                Component coolingInfo = getCoolingComponent(maxCoolingAmount, maxCoolingDemand);
+                Component coolingAvailableInfo = getCoolingAvailableComponent(maxCoolingAmount, maxCoolingDemand);
+                Component coolantRequiredInfo = getCoolantRequiredComponent(maxCoolingDemand);
+                Component bridgingInfo = getBridgingComponent(numBridges);
 
                 iTooltip.add(voltageText);
                 iTooltip.add(cwutInfo);
@@ -59,9 +60,71 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
     public void appendServerData(CompoundTag compoundTag, BlockAccessor blockAccessor) {
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
-            if (machine instanceof DataBankMachine dataBank) {
-                compoundTag.putLong("energyUsage", dataBank.getEnergyUsage());
+            if (machine instanceof HPCAMachine hpca) {
+                compoundTag.putLong("energyUsage", hpca.getEnergyUsage());
+                compoundTag.putInt("CWUt", hpca.getMaxCWUt());
+                compoundTag.putInt("numBridges", hpca.getNumBridges());
+                compoundTag.putInt("maxCoolingDemand", hpca.getMaxCoolingDemand());
+                compoundTag.putInt("maxCoolingAmount", hpca.getMaxCoolingAmount());
             }
+        }
+    }
+
+    private MutableComponent getEnergyUsage(long energyUsage) {
+        String energyFormatted = FormattingUtil.formatNumbers(energyUsage);
+        Component voltageName = Component.literal(GTValues.VNF[GTUtil.getTierByVoltage(energyUsage)]);
+        return Component.translatable(
+                "gtceu.multiblock.energy_consumption",
+                energyFormatted,
+                voltageName);
+    }
+
+    private MutableComponent getCWUtProductionComponent(int CWUt) {
+        MutableComponent data = Component.literal(Integer.toString(CWUt)).withStyle(ChatFormatting.AQUA);
+        return Component.translatable("gtceu.multiblock.hpca.info_max_computation", data)
+                .withStyle(ChatFormatting.GRAY);
+    }
+
+    private ChatFormatting getCoolingColor(int maxCoolingAmount, int maxCoolingDemand) {
+        return maxCoolingAmount < maxCoolingDemand ? ChatFormatting.RED : ChatFormatting.GREEN;
+    }
+
+    private MutableComponent getCoolingComponent(int maxCoolingAmount, int maxCoolingDemand) {
+        MutableComponent data = Component.literal(Integer.toString(maxCoolingDemand))
+                .withStyle(getCoolingColor(maxCoolingAmount, maxCoolingDemand));
+        return Component.translatable("gtceu.multiblock.hpca.info_max_cooling_demand", data)
+                .withStyle(ChatFormatting.GRAY);
+    }
+
+    private MutableComponent getCoolingAvailableComponent(int maxCoolingAmount, int maxCoolingDemand) {
+        MutableComponent data = Component.literal(Integer.toString(maxCoolingAmount))
+                .withStyle(getCoolingColor(maxCoolingAmount, maxCoolingDemand));
+        return Component.translatable("gtceu.multiblock.hpca.info_max_cooling_available", data)
+                .withStyle(ChatFormatting.GRAY);
+    }
+
+    private MutableComponent getCoolantRequiredComponent(int maxCoolantDemand) {
+        MutableComponent data;
+        if (maxCoolantDemand > 0) {
+            data = Component.translatable("gtceu.universal.liters", maxCoolantDemand)
+                    .withStyle(ChatFormatting.YELLOW).append(" ");
+            Component coolantName = Component.translatable("gtceu.multiblock.hpca.info_coolant_name")
+                    .withStyle(ChatFormatting.YELLOW);
+            data.append(coolantName);
+        } else {
+            data = Component.literal("0").withStyle(ChatFormatting.GREEN);
+        }
+        return Component.translatable("gtceu.multiblock.hpca.info_max_coolant_required", data)
+                .withStyle(ChatFormatting.GRAY);
+    }
+
+    private MutableComponent getBridgingComponent(int numBridges) {
+        if (numBridges > 0) {
+            return Component.translatable("gtceu.multiblock.hpca.info_bridging_enabled")
+                    .withStyle(ChatFormatting.GREEN);
+        } else {
+            return Component.translatable("gtceu.multiblock.hpca.info_bridging_disabled")
+                    .withStyle(ChatFormatting.RED);
         }
     }
 }

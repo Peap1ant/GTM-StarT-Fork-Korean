@@ -340,24 +340,20 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
                 .addWorkingStatusLine();
     }
 
-    public MutableComponent getCWUtProductionComponent() {
-        return hpcaHandler.getCWUtProductionComponent();
+    public int getMaxCoolingAmount() {
+        return hpcaHandler.getMaxCoolingAmount();
     }
 
-    public MutableComponent getCoolingComponent() {
-        return hpcaHandler.getCoolingComponent();
+    public int getMaxCoolingDemand() {
+        return hpcaHandler.getMaxCoolingDemand();
     }
 
-    public MutableComponent getCoolingAvailableComponent() {
-        return hpcaHandler.getCoolingAvailableComponent();
+    public int getNumBridges() {
+        return hpcaHandler.getNumBridges();
     }
 
-    public MutableComponent getCoolantRequiredComponent() {
-        return hpcaHandler.getCoolantRequiredComponent();
-    }
-
-    public MutableComponent getBridgingComponent() {
-        return hpcaHandler.getBridgingComponent();
+    public long getEnergyUsage() {
+        return hpcaHandler.getCurrentEUt();
     }
 
     private ChatFormatting getDisplayTemperatureColor() {
@@ -441,6 +437,7 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
         private final Set<IHPCAComputationProvider> computationProviders = new ObjectOpenHashSet<>();
         @Getter
         private final int gridSize;
+        @Getter
         private int numBridges;
 
         // transaction info
@@ -742,18 +739,10 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
         }
 
         public void addInfo(List<Component> textList) {
-            // Max Computation
             textList.add(this.getCWUtProductionComponent());
-
-            // Cooling
             textList.add(this.getCoolingComponent());
-
             textList.add(this.getCoolingAvailableComponent());
-
-            // Coolant Required
             textList.add(this.getCoolantRequiredComponent());
-
-            // Bridging
             textList.add(this.getBridgingComponent());
         }
 
