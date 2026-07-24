@@ -20,7 +20,6 @@ import com.gregtechceu.gtceu.api.recipe.modifier.RecipeModifier;
 import com.gregtechceu.gtceu.api.recipe.modifier.RecipeModifierList;
 import com.gregtechceu.gtceu.api.registry.GTRegistries;
 import com.gregtechceu.gtceu.api.registry.registrate.provider.GTBlockstateProvider;
-import com.gregtechceu.gtceu.client.TooltipPageManager;
 import com.gregtechceu.gtceu.client.model.machine.MachineRenderState;
 import com.gregtechceu.gtceu.client.renderer.BlockEntityWithBERModelRenderer;
 import com.gregtechceu.gtceu.common.data.GTRecipeModifiers;
@@ -31,10 +30,10 @@ import com.gregtechceu.gtceu.data.lang.LangHandler;
 import com.gregtechceu.gtceu.data.model.builder.MachineModelBuilder;
 import com.gregtechceu.gtceu.utils.GTUtil;
 import com.gregtechceu.gtceu.utils.input.SyncedKeyMappings;
+import com.gregtechceu.gtceu.utils.input.TooltipScrollHandler;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.MethodsReturnNonnullByDefault;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -52,9 +51,9 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.client.model.generators.BlockModelBuilder;
+import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.fml.DistExecutor;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.tterrag.registrate.AbstractRegistrate;
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.builders.ItemBuilder;
@@ -155,12 +154,14 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
             GTValues.VC[tier] : tintIndex == 1 ? paintingColor : -1);
     private PartAbility[] abilities = new PartAbility[0];
     private final List<Component> tooltips = new ArrayList<>();
+    @Getter
     private final List<List<Component>> paginatedTooltips = new ArrayList<>();
     private final List<Component> bottomTooltips = new ArrayList<>();
     @Nullable
     @Setter
     private BiConsumer<ItemStack, List<Component>> tooltipBuilder;
-    private RecipeModifier recipeModifier = new RecipeModifierList(GTRecipeModifiers.OC_NON_PERFECT);
+    @Getter
+    private RecipeModifierList recipeModifier = new RecipeModifierList(GTRecipeModifiers.OC_NON_PERFECT);
     @Setter
     private boolean alwaysTryModifyRecipe;
     @NotNull
@@ -684,15 +685,12 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
         Component showCapabilities = Component.translatable("gtceu.tooltip.show_capabilities");
         Component showCapabilitiesShift = Component.translatable("gtceu.tooltip.show_capabilities_shift");
 
-        if (recipeModifier instanceof RecipeModifierList recipeModifiers) {
-            for (RecipeModifier modifier : recipeModifiers.modifiers()) {
-                String modifierId = modifier.getId();
-
-                if (!GTRecipeModifiers.ignoreModifiers.contains(modifierId) && !modifierId.contains("lambda") &&
-                        !modifierId.contains("proxy")) {
-                    shiftTooltips.add("gtceu.modifier.%s.name".formatted(modifierId));
-                    shiftTooltipDescriptions.add("gtceu.modifier.%s.description".formatted(modifierId));
-                }
+        for (RecipeModifier modifier : recipeModifier.modifiers()) {
+            String modifierId = modifier.getId();
+            if (!GTRecipeModifiers.ignoreModifiers.contains(modifierId) && !modifierId.contains("lambda") &&
+                    !modifierId.contains("proxy")) {
+                shiftTooltips.add("gtceu.modifier.%s.name".formatted(modifierId));
+                shiftTooltipDescriptions.add("gtceu.modifier.%s.description".formatted(modifierId));
             }
         }
 
@@ -702,32 +700,14 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
         int maxPaginatedPages = paginatedTooltips.size();
 
         return (itemStack, components) -> {
+            TooltipScrollHandler.setCurrentTooltipMachine(this);
             boolean isShiftDown = GTUtil.isShiftDown();
-            long windowId = Minecraft.getInstance().getWindow().getWindow();
-            long currentTime = System.currentTimeMillis();
-            long lastChange = TooltipPageManager.getLastChangeTime(id);
 
             if (!isShiftToolsEmpty && isShiftDown) {
-                boolean nextPressed = InputConstants.isKeyDown(windowId,
-                        SyncedKeyMappings.TOOLTIP_DOWN_PAGE.getKeyCode());
-                boolean prevPressed = InputConstants.isKeyDown(windowId,
-                        SyncedKeyMappings.TOOLTIP_UP_PAGE.getKeyCode());
-                int currentModifierPage = TooltipPageManager.getCurrentModifierPage(id);
-
-                // This is needed, as SyncedKeyMapping.isKeyDown is not working for this
-                if ((nextPressed || prevPressed) && (currentTime - lastChange > 200)) {
-                    if (nextPressed && !prevPressed) {
-                        currentModifierPage = (currentModifierPage + 1) % maxModifierPages;
-                    } else if (!nextPressed) {
-                        currentModifierPage = currentModifierPage == 0 ? maxModifierPages - 1 : currentModifierPage - 1;
-                    }
-
-                    TooltipPageManager.setCurrentModifierPage(id, currentModifierPage);
-                    TooltipPageManager.setLastChangeTime(id, currentTime);
-                }
+                var currentModifierPage = Math.floorMod(TooltipScrollHandler.getCurrentTooltipModifier(),
+                        maxModifierPages);
 
                 components.add(showCapabilitiesShift);
-
                 for (int i = 0; i < maxModifierPages; i++) {
                     if (i == currentModifierPage) {
                         components.add(Component.translatable(shiftTooltips.get(i), "[x] "));
@@ -737,52 +717,46 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
                     }
                 }
 
+                var keyPrev = Component.literal("[")
+                        .append(SyncedKeyMappings.TOOLTIP_PREV.getCombinedDisplayName(KeyModifier.SHIFT))
+                        .append("]");
+                var keyNext = Component.literal("[")
+                        .append(SyncedKeyMappings.TOOLTIP_NEXT.getCombinedDisplayName(KeyModifier.SHIFT))
+                        .append("]");
+
                 components.add(Component.translatable("gtceu.tooltip.capabilities_info",
-                        Component.literal("[" + SyncedKeyMappings.TOOLTIP_UP_PAGE.getDisplayName() + "]")
-                                .withStyle(ChatFormatting.LIGHT_PURPLE),
-                        Component.literal("[" + SyncedKeyMappings.TOOLTIP_DOWN_PAGE.getDisplayName() + "]")
-                                .withStyle(ChatFormatting.LIGHT_PURPLE))
+                        keyPrev.withStyle(ChatFormatting.LIGHT_PURPLE),
+                        keyNext.withStyle(ChatFormatting.LIGHT_PURPLE))
                         .withStyle(ChatFormatting.GRAY));
-            } else {
-                if (!isPaginatedTooltipsEmpty) {
-                    if (maxPaginatedPages > 1) {
-                        boolean nextPressed = InputConstants.isKeyDown(windowId,
-                                SyncedKeyMappings.TOOLTIP_NEXT_PAGE.getKeyCode());
-                        boolean prevPressed = InputConstants.isKeyDown(windowId,
-                                SyncedKeyMappings.TOOLTIP_PREV_PAGE.getKeyCode());
-                        int currentPage = TooltipPageManager.getCurrentPage(id);
+                return;
+            }
 
-                        // This is needed, as SyncedKeyMapping.isKeyDown is not working for this
-                        if ((nextPressed || prevPressed) && (currentTime - lastChange > 200)) {
-                            if (nextPressed && !prevPressed) {
-                                currentPage = (currentPage + 1) % maxPaginatedPages;
-                            } else if (!nextPressed) {
-                                currentPage = currentPage == 0 ? maxPaginatedPages - 1 : currentPage - 1;
-                            }
+            if (!isPaginatedTooltipsEmpty) {
+                var currentPage = Math.floorMod(TooltipScrollHandler.getCurrentTooltipPage(), maxPaginatedPages);
+                if (maxPaginatedPages > 1) {
+                    components.addAll(paginatedTooltips.get(currentPage));
 
-                            TooltipPageManager.setCurrentPage(id, currentPage);
-                            TooltipPageManager.setLastChangeTime(id, currentTime);
-                        }
+                    var keyPrev = Component.literal("[")
+                            .append(SyncedKeyMappings.TOOLTIP_PREV.getCombinedDisplayName(TooltipScrollHandler
+                                    .getRequiredModifierForPageScroll(SyncedKeyMappings.TOOLTIP_PREV)))
+                            .append("]");
+                    var keyNext = Component.literal("[")
+                            .append(SyncedKeyMappings.TOOLTIP_NEXT.getCombinedDisplayName(TooltipScrollHandler
+                                    .getRequiredModifierForPageScroll(SyncedKeyMappings.TOOLTIP_NEXT)))
+                            .append("]");
 
-                        if (currentPage < maxPaginatedPages) {
-                            components.addAll(paginatedTooltips.get(currentPage));
-                        }
-
-                        components.add(Component.translatable("gtceu.tooltip.paginated_info",
-                                Component.literal("[" + SyncedKeyMappings.TOOLTIP_PREV_PAGE.getDisplayName() + "]")
-                                        .withStyle(ChatFormatting.LIGHT_PURPLE),
-                                currentPage + 1, maxPaginatedPages,
-                                Component.literal("[" + SyncedKeyMappings.TOOLTIP_NEXT_PAGE.getDisplayName() + "]")
-                                        .withStyle(ChatFormatting.LIGHT_PURPLE))
-                                .withStyle(ChatFormatting.GRAY));
-                    } else {
-                        components.addAll(paginatedTooltips.get(0));
-                    }
+                    components.add(Component.translatable("gtceu.tooltip.paginated_info",
+                            keyPrev.withStyle(ChatFormatting.LIGHT_PURPLE),
+                            currentPage + 1, maxPaginatedPages,
+                            keyNext.withStyle(ChatFormatting.LIGHT_PURPLE))
+                            .withStyle(ChatFormatting.GRAY));
+                } else {
+                    components.addAll(paginatedTooltips.get(0));
                 }
+            }
 
-                if (!isShiftToolsEmpty) {
-                    components.add(showCapabilities);
-                }
+            if (!isShiftToolsEmpty) {
+                components.add(showCapabilities);
             }
         };
     }
