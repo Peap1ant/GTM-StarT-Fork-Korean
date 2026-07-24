@@ -31,7 +31,7 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
     public void appendTooltip(ITooltip iTooltip, BlockAccessor blockAccessor, IPluginConfig iPluginConfig) {
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
-            if (machine instanceof HPCAMachine hpca) {
+            if (machine instanceof HPCAMachine && blockAccessor.getServerData().getBoolean("isFormed")) {
                 long energyUsage = blockAccessor.getServerData().getLong("energyUsage");
                 int CWUt = blockAccessor.getServerData().getInt("CWUt");
                 int numBridges = blockAccessor.getServerData().getInt("numBridges");
@@ -61,6 +61,7 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
             if (machine instanceof HPCAMachine hpca) {
+                compoundTag.putBoolean("isFormed", hpca.isFormed());
                 compoundTag.putLong("energyUsage", hpca.getEnergyUsage());
                 compoundTag.putInt("CWUt", hpca.getMaxCWUt());
                 compoundTag.putInt("numBridges", hpca.getNumBridges());

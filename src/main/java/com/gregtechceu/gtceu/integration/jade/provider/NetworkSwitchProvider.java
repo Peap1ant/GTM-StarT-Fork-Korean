@@ -27,15 +27,17 @@ public class NetworkSwitchProvider implements IBlockComponentProvider, IServerDa
     public void appendTooltip(ITooltip tooltip, BlockAccessor blockAccessor, IPluginConfig config) {
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
-            if (machine instanceof NetworkSwitchMachine) {
+            if (machine instanceof NetworkSwitchMachine && blockAccessor.getServerData().getBoolean("isFormed")) {
                 int receiversCount = blockAccessor.getServerData().getInt("receiversCount");
                 int transmittersCount = blockAccessor.getServerData().getInt("transmittersCount");
                 int cwut = blockAccessor.getServerData().getInt("cwut");
+
                 // wrap in text component to keep it from being formatted
                 var receivers = Component.literal(Integer.toString(receiversCount)).withStyle(ChatFormatting.WHITE);
                 var transmitters = Component.literal(Integer.toString(transmittersCount))
                         .withStyle(ChatFormatting.WHITE);
                 var cwutText = Component.literal(Integer.toString(cwut)).withStyle(ChatFormatting.AQUA);
+
                 tooltip.add(Component.translatable("gtceu.multiblock.network_switch.receivers", receivers));
                 tooltip.add(Component.translatable("gtceu.multiblock.network_switch.transmitters", transmitters));
                 tooltip.add(Component.translatable("gtceu.multiblock.computation.max", cwutText));
@@ -48,6 +50,7 @@ public class NetworkSwitchProvider implements IBlockComponentProvider, IServerDa
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
             if (machine instanceof NetworkSwitchMachine networkSwitch) {
+                compoundTag.putBoolean("isFormed", networkSwitch.isFormed());
                 compoundTag.putInt("receiversCount", networkSwitch.getReceiversCount());
                 compoundTag.putInt("transmittersCount", networkSwitch.getTransmittersCount());
                 compoundTag.putInt("cwut", networkSwitch.getMaxCWUtForDisplay());
