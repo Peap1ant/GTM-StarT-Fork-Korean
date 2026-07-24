@@ -4,7 +4,6 @@ import com.gregtechceu.gtceu.GTCEu;
 import com.gregtechceu.gtceu.api.GTValues;
 import com.gregtechceu.gtceu.api.machine.IMachineBlockEntity;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
-import com.gregtechceu.gtceu.common.machine.multiblock.electric.research.DataBankMachine;
 import com.gregtechceu.gtceu.common.machine.multiblock.electric.research.HPCAMachine;
 import com.gregtechceu.gtceu.utils.FormattingUtil;
 import com.gregtechceu.gtceu.utils.GTUtil;
@@ -70,7 +69,7 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
         }
     }
 
-    private MutableComponent getEnergyUsage(long energyUsage) {
+    private static MutableComponent getEnergyUsage(long energyUsage) {
         String energyFormatted = FormattingUtil.formatNumbers(energyUsage);
         Component voltageName = Component.literal(GTValues.VNF[GTUtil.getTierByVoltage(energyUsage)]);
         return Component.translatable(
@@ -79,31 +78,31 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
                 voltageName);
     }
 
-    private MutableComponent getCWUtProductionComponent(int CWUt) {
+    private static MutableComponent getCWUtProductionComponent(int CWUt) {
         MutableComponent data = Component.literal(Integer.toString(CWUt)).withStyle(ChatFormatting.AQUA);
         return Component.translatable("gtceu.multiblock.hpca.info_max_computation", data)
                 .withStyle(ChatFormatting.GRAY);
     }
 
-    private ChatFormatting getCoolingColor(int maxCoolingAmount, int maxCoolingDemand) {
+    private static ChatFormatting getCoolingColor(int maxCoolingAmount, int maxCoolingDemand) {
         return maxCoolingAmount < maxCoolingDemand ? ChatFormatting.RED : ChatFormatting.GREEN;
     }
 
-    private MutableComponent getCoolingComponent(int maxCoolingAmount, int maxCoolingDemand) {
+    private static MutableComponent getCoolingComponent(int maxCoolingAmount, int maxCoolingDemand) {
         MutableComponent data = Component.literal(Integer.toString(maxCoolingDemand))
                 .withStyle(getCoolingColor(maxCoolingAmount, maxCoolingDemand));
         return Component.translatable("gtceu.multiblock.hpca.info_max_cooling_demand", data)
                 .withStyle(ChatFormatting.GRAY);
     }
 
-    private MutableComponent getCoolingAvailableComponent(int maxCoolingAmount, int maxCoolingDemand) {
+    private static MutableComponent getCoolingAvailableComponent(int maxCoolingAmount, int maxCoolingDemand) {
         MutableComponent data = Component.literal(Integer.toString(maxCoolingAmount))
                 .withStyle(getCoolingColor(maxCoolingAmount, maxCoolingDemand));
         return Component.translatable("gtceu.multiblock.hpca.info_max_cooling_available", data)
                 .withStyle(ChatFormatting.GRAY);
     }
 
-    private MutableComponent getCoolantRequiredComponent(int maxCoolantDemand) {
+    private static MutableComponent getCoolantRequiredComponent(int maxCoolantDemand) {
         MutableComponent data;
         if (maxCoolantDemand > 0) {
             data = Component.translatable("gtceu.universal.liters", maxCoolantDemand)
@@ -118,7 +117,7 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
                 .withStyle(ChatFormatting.GRAY);
     }
 
-    private MutableComponent getBridgingComponent(int numBridges) {
+    private static MutableComponent getBridgingComponent(int numBridges) {
         if (numBridges > 0) {
             return Component.translatable("gtceu.multiblock.hpca.info_bridging_enabled")
                     .withStyle(ChatFormatting.GREEN);
