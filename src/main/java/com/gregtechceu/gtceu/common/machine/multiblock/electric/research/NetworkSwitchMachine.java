@@ -11,6 +11,8 @@ import com.gregtechceu.gtceu.api.machine.multiblock.MultiblockDisplayText;
 import com.gregtechceu.gtceu.api.machine.multiblock.PartAbility;
 import com.gregtechceu.gtceu.api.machine.trait.NotifiableComputationContainer;
 
+import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
+
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Block;
@@ -18,7 +20,6 @@ import net.minecraft.world.level.block.Block;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -35,10 +36,11 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     public static final int EUT_PER_HATCH = GTValues.VA[GTValues.IV];
 
     @Getter
-    @Setter
+    @DescSynced
     private int receiversCount;
+
     @Getter
-    @Setter
+    @DescSynced
     private int transmittersCount;
 
     private final MultipleComputationHandler computationHandler = new MultipleComputationHandler(this);
@@ -67,9 +69,7 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     public void onStructureFormed() {
         super.onStructureFormed();
         List<IOpticalComputationHatch> receivers = new ArrayList<>();
-        this.setReceiversCount(receivers.size());
         List<IOpticalComputationHatch> transmitters = new ArrayList<>();
-        this.setTransmittersCount(transmitters.size());
         for (var part : this.getParts()) {
             Block block = part.self().getBlockState().getBlock();
             List<IOpticalComputationHatch> list;
@@ -93,6 +93,8 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                 }
             }
         }
+        receiversCount = receivers.size();
+        transmittersCount = transmitters.size();
         computationHandler.onStructureForm(receivers, transmitters);
     }
 
@@ -100,8 +102,8 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     public void onStructureInvalid() {
         super.onStructureInvalid();
         computationHandler.reset();
-        this.setReceiversCount(0);
-        this.setTransmittersCount(0);
+        receiversCount = 0;
+        transmittersCount = 0;
     }
 
     @Override
@@ -110,20 +112,20 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     }
 
     @Override
-    public int requestCWUt(int cwut, boolean simulate, @NotNull Collection<IOpticalComputationProvider> seen) {
+    public int requestCWUt(int cwut, boolean simulate, Collection<IOpticalComputationProvider> seen) {
         seen.add(this);
         return isActive() && !getRecipeLogic().isWaiting() ? computationHandler.requestCWUt(cwut, simulate, seen) : 0;
     }
 
     @Override
-    public int getMaxCWUt(@NotNull Collection<IOpticalComputationProvider> seen) {
+    public int getMaxCWUt(Collection<IOpticalComputationProvider> seen) {
         seen.add(this);
         return isFormed() ? computationHandler.getMaxCWUt(seen) : 0;
     }
 
     // allows chaining Network Switches together
     @Override
-    public boolean canBridge(@NotNull Collection<IOpticalComputationProvider> seen) {
+    public boolean canBridge(Collection<IOpticalComputationProvider> seen) {
         seen.add(this);
         return true;
     }
@@ -142,18 +144,16 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                         "gtceu.multiblock.data_bank.providing")
                 .addEnergyUsageExactLine(getEnergyUsage())
                 .addCustom((components) -> {
-                    if (isFormed()) {
-                        components.add(Component.translatable("gtceu.multiblock.network_switch.receivers",
-                                this.getReceiversCount()));
-                    }
-                }) // Receivers
+                    if (!isFormed()) return;
+                    // Receivers
+                    components.add(Component.translatable("gtceu.multiblock.network_switch.receivers", receiversCount));
+                })
                 .addCustom((components) -> {
-                    if (isFormed()) {
-                        components.add(Component
-                                .translatable("gtceu.multiblock.network_switch.transmitters",
-                                        this.getTransmittersCount()));
-                    }
-                }) // Transmitters
+                    if (!isFormed()) return;
+                    // Transmitters
+                    components.add(
+                            Component.translatable("gtceu.multiblock.network_switch.transmitters", transmittersCount));
+                })
                 .addComputationUsageLine(computationHandler.getMaxCWUtForDisplay())
                 .addWorkingStatusLine();
     }
@@ -253,7 +253,7 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
             return maximumCWUt;
         }
 
-        public int getMaxCWUt(@NotNull Collection<IOpticalComputationProvider> seen) {
+        public int getMaxCWUt(Collection<IOpticalComputationProvider> seen) {
             if (seen.contains(this)) return 0;
             // The max CWU/t that this Network Switch can provide, combining all its inputs.
             seen.add(this);

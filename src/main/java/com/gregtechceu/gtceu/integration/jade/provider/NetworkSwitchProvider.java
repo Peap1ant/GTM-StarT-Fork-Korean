@@ -1,12 +1,9 @@
 package com.gregtechceu.gtceu.integration.jade.provider;
 
 import com.gregtechceu.gtceu.GTCEu;
-import com.gregtechceu.gtceu.api.GTValues;
 import com.gregtechceu.gtceu.api.machine.IMachineBlockEntity;
 import com.gregtechceu.gtceu.api.machine.MetaMachine;
 import com.gregtechceu.gtceu.common.machine.multiblock.electric.research.NetworkSwitchMachine;
-import com.gregtechceu.gtceu.utils.FormattingUtil;
-import com.gregtechceu.gtceu.utils.GTUtil;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -27,31 +24,21 @@ public class NetworkSwitchProvider implements IBlockComponentProvider, IServerDa
     }
 
     @Override
-    public void appendTooltip(ITooltip iTooltip, BlockAccessor blockAccessor, IPluginConfig iPluginConfig) {
+    public void appendTooltip(ITooltip tooltip, BlockAccessor blockAccessor, IPluginConfig config) {
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
             if (machine instanceof NetworkSwitchMachine) {
-                long energyUsage = blockAccessor.getServerData().getLong("energyUsage");
-                String energyFormatted = FormattingUtil.formatNumbers(energyUsage);
                 int receiversCount = blockAccessor.getServerData().getInt("receiversCount");
                 int transmittersCount = blockAccessor.getServerData().getInt("transmittersCount");
                 int cwut = blockAccessor.getServerData().getInt("cwut");
                 // wrap in text component to keep it from being formatted
-                Component voltageName = Component.literal(GTValues.VNF[GTUtil.getTierByVoltage(energyUsage)]);
-                Component text = Component.translatable(
-                        "gtceu.multiblock.energy_consumption",
-                        energyFormatted,
-                        voltageName);
-                Component receivers = Component.translatable("gtceu.multiblock.network_switch.receivers",
-                        receiversCount);
-                Component transmitters = Component.translatable("gtceu.multiblock.network_switch.transmitters",
-                        transmittersCount);
-                Component cwutText = Component.translatable("gtceu.multiblock.computation.max", cwut)
-                        .withStyle(ChatFormatting.GRAY);
-                iTooltip.add(text);
-                iTooltip.add(receivers);
-                iTooltip.add(transmitters);
-                iTooltip.add(cwutText);
+                var receivers = Component.literal(Integer.toString(receiversCount)).withStyle(ChatFormatting.WHITE);
+                var transmitters = Component.literal(Integer.toString(transmittersCount))
+                        .withStyle(ChatFormatting.WHITE);
+                var cwutText = Component.literal(Integer.toString(cwut)).withStyle(ChatFormatting.AQUA);
+                tooltip.add(Component.translatable("gtceu.multiblock.network_switch.receivers", receivers));
+                tooltip.add(Component.translatable("gtceu.multiblock.network_switch.transmitters", transmitters));
+                tooltip.add(Component.translatable("gtceu.multiblock.computation.max", cwutText));
             }
         }
     }
@@ -61,7 +48,6 @@ public class NetworkSwitchProvider implements IBlockComponentProvider, IServerDa
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
             if (machine instanceof NetworkSwitchMachine networkSwitch) {
-                compoundTag.putLong("energyUsage", networkSwitch.getEnergyUsage());
                 compoundTag.putInt("receiversCount", networkSwitch.getReceiversCount());
                 compoundTag.putInt("transmittersCount", networkSwitch.getTransmittersCount());
                 compoundTag.putInt("cwut", networkSwitch.getMaxCWUtForDisplay());
