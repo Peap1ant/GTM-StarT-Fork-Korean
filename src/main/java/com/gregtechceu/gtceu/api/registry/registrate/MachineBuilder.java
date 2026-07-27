@@ -20,19 +20,15 @@ import com.gregtechceu.gtceu.api.recipe.modifier.RecipeModifier;
 import com.gregtechceu.gtceu.api.recipe.modifier.RecipeModifierList;
 import com.gregtechceu.gtceu.api.registry.GTRegistries;
 import com.gregtechceu.gtceu.api.registry.registrate.provider.GTBlockstateProvider;
+import com.gregtechceu.gtceu.client.TooltipsHandler;
 import com.gregtechceu.gtceu.client.model.machine.MachineRenderState;
 import com.gregtechceu.gtceu.client.renderer.BlockEntityWithBERModelRenderer;
 import com.gregtechceu.gtceu.common.data.GTRecipeModifiers;
 import com.gregtechceu.gtceu.common.data.GTRecipeTypes;
 import com.gregtechceu.gtceu.common.data.models.GTMachineModels;
 import com.gregtechceu.gtceu.config.ConfigHolder;
-import com.gregtechceu.gtceu.data.lang.LangHandler;
 import com.gregtechceu.gtceu.data.model.builder.MachineModelBuilder;
-import com.gregtechceu.gtceu.utils.GTUtil;
-import com.gregtechceu.gtceu.utils.input.SyncedKeyMappings;
-import com.gregtechceu.gtceu.utils.input.TooltipScrollHandler;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
@@ -51,7 +47,6 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.client.model.generators.BlockModelBuilder;
-import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.fml.DistExecutor;
 
 import com.tterrag.registrate.AbstractRegistrate;
@@ -564,6 +559,12 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
         definition.registerDefaultState(defaultState);
     }
 
+    private @Nullable BiConsumer<ItemStack, List<Component>> getPaginatedTooltipsHandler(DEFINITION definition) {
+        return DistExecutor.unsafeRunForDist(
+                () -> () -> TooltipsHandler.makePaginatedTooltipHandler(definition, paginatedTooltips),
+                () -> () -> null);
+    }
+
     @HideFromJS
     public DEFINITION register() {
         this.registrate.object(name);
@@ -606,52 +607,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
         definition.setBlockEntityTypeSupplier(blockEntity::get);
         definition.setMachineSupplier(machine);
 
-        Component availableRecipeTypes;
-        boolean isAvailableRecipeTypesEmpty;
-
-        if (recipeTypes.length > 1 && Arrays.stream(recipeTypes).noneMatch(rt -> "gtceu:dummy".equals(rt.toString()))) {
-            Component combined = Arrays.stream(recipeTypes)
-                    .map(GTRecipeType::toString)
-                    .map(name -> name.replace(":", "."))
-                    .map(Component::translatable)
-                    .reduce((c1, c2) -> Component.empty()
-                            .append(c1)
-                            .append(", ")
-                            .append(c2))
-                    .orElse(Component.empty());
-
-            if (!combined.toString().isEmpty()) {
-                isAvailableRecipeTypesEmpty = false;
-                availableRecipeTypes = Component.translatable("gtceu.machine.available_recipe_map_1.tooltip", combined)
-                        .withStyle(ChatFormatting.GREEN);
-            } else {
-                isAvailableRecipeTypesEmpty = true;
-                availableRecipeTypes = Component.empty();
-            }
-        } else {
-            isAvailableRecipeTypesEmpty = true;
-            availableRecipeTypes = Component.empty();
-        }
-
         ResourceLocation id = definition.getId();
-
-        var clientTooltipsHandler = DistExecutor.unsafeRunForDist(() -> this::getClientTooltipsHandler,
-                () -> () -> (itemStack, components) -> {});
-
-        definition.setTooltipBuilder((itemStack, components) -> {
-            components.addAll(tooltips);
-            clientTooltipsHandler.accept(itemStack, components);
-            if (!isAvailableRecipeTypesEmpty) {
-                components.add(availableRecipeTypes);
-            }
-
-            if (!bottomTooltips.isEmpty()) {
-                components.add(Component.translatable("gtceu.universal.tooltip.breaker"));
-                components.addAll(bottomTooltips);
-            }
-
-            if (tooltipBuilder != null) tooltipBuilder.accept(itemStack, components);
-        });
 
         definition.setRecipeModifier(recipeModifier);
         definition.setAlwaysTryModifyRecipe(alwaysTryModifyRecipe);
@@ -679,105 +635,37 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
         definition.setDefaultPaintingColor(paintingColor);
         definition.setRenderXEIPreview(renderMultiblockXEIPreview);
         definition.setRenderWorldPreview(renderMultiblockWorldPreview);
+
+        var clientTooltipsHandler = getPaginatedTooltipsHandler(definition);
+        var recipeTypesComponent = TooltipsHandler.getRecipeTypesComponent(definition);
+
+        definition.setTooltipBuilder((itemStack, components) -> {
+            components.addAll(tooltips);
+            if (clientTooltipsHandler != null) {
+                clientTooltipsHandler.accept(itemStack, components);
+            }
+            if (recipeTypesComponent != null) {
+                components.add(recipeTypesComponent);
+            }
+            if (!bottomTooltips.isEmpty()) {
+                components.add(Component.translatable("gtceu.universal.tooltip.breaker"));
+                components.addAll(bottomTooltips);
+            }
+            if (tooltipBuilder != null) {
+                tooltipBuilder.accept(itemStack, components);
+            }
+        });
+
         GTRegistries.MACHINES.register(definition.getId(), definition);
         return value = definition;
-    }
-
-    private BiConsumer<ItemStack, List<Component>> getClientTooltipsHandler() {
-        List<String> shiftTooltips = new ArrayList<>();
-        List<String> shiftTooltipDescriptions = new ArrayList<>();
-
-        Component showCapabilities = Component.translatable("gtceu.tooltip.show_capabilities");
-        Component showCapabilitiesShift = Component.translatable("gtceu.tooltip.show_capabilities_shift");
-        Component breakerLine = Component.translatable("gtceu.universal.tooltip.breaker");
-
-        for (RecipeModifier modifier : recipeModifier.modifiers()) {
-            String modifierId = modifier.getId();
-            if (!GTRecipeModifiers.ignoreModifiers.contains(modifierId) && !modifierId.contains("lambda") &&
-                    !modifierId.contains("proxy")) {
-                shiftTooltips.add("gtceu.modifier.%s.name".formatted(modifierId));
-                shiftTooltipDescriptions.add("gtceu.modifier.%s.description".formatted(modifierId));
-            }
-        }
-
-        boolean isShiftToolsEmpty = shiftTooltips.isEmpty();
-        boolean isPaginatedTooltipsEmpty = paginatedTooltips.isEmpty();
-        int maxModifierPages = shiftTooltips.size();
-        int maxPaginatedPages = paginatedTooltips.size();
-
-        return (itemStack, components) -> {
-            TooltipScrollHandler.setCurrentTooltipMachine(this);
-            boolean isShiftDown = GTUtil.isShiftDown();
-
-            if (!isShiftToolsEmpty && isShiftDown) {
-                var currentModifierPage = Math.floorMod(TooltipScrollHandler.getCurrentTooltipModifier(),
-                        maxModifierPages);
-
-                components.add(breakerLine);
-                components.add(showCapabilitiesShift);
-                for (int i = 0; i < maxModifierPages; i++) {
-                    if (i == currentModifierPage) {
-                        components.add(Component.translatable(shiftTooltips.get(i), "[x] "));
-                        components.addAll(LangHandler.getSingleOrMultiLang(shiftTooltipDescriptions.get(i)));
-                    } else {
-                        components.add(Component.translatable(shiftTooltips.get(i), "[ ] "));
-                    }
-                }
-
-                var keyPrev = Component.literal("[")
-                        .append(SyncedKeyMappings.TOOLTIP_PREV.getCombinedDisplayName(KeyModifier.SHIFT))
-                        .append("]");
-                var keyNext = Component.literal("[")
-                        .append(SyncedKeyMappings.TOOLTIP_NEXT.getCombinedDisplayName(KeyModifier.SHIFT))
-                        .append("]");
-
-                components.add(Component.translatable("gtceu.tooltip.capabilities_info",
-                        keyPrev.withStyle(ChatFormatting.LIGHT_PURPLE),
-                        keyNext.withStyle(ChatFormatting.LIGHT_PURPLE))
-                        .withStyle(ChatFormatting.GRAY));
-                return;
-            }
-
-            if (!isPaginatedTooltipsEmpty) {
-                var currentPage = Math.floorMod(TooltipScrollHandler.getCurrentTooltipPage(), maxPaginatedPages);
-
-                components.add(breakerLine);
-
-                if (maxPaginatedPages > 1) {
-                    components.addAll(paginatedTooltips.get(currentPage));
-
-                    var keyPrev = Component.literal("[")
-                            .append(SyncedKeyMappings.TOOLTIP_PREV.getCombinedDisplayName(TooltipScrollHandler
-                                    .getRequiredModifierForPageScroll(SyncedKeyMappings.TOOLTIP_PREV)))
-                            .append("]");
-                    var keyNext = Component.literal("[")
-                            .append(SyncedKeyMappings.TOOLTIP_NEXT.getCombinedDisplayName(TooltipScrollHandler
-                                    .getRequiredModifierForPageScroll(SyncedKeyMappings.TOOLTIP_NEXT)))
-                            .append("]");
-
-                    components.add(Component.translatable("gtceu.tooltip.paginated_info",
-                            keyPrev.withStyle(ChatFormatting.LIGHT_PURPLE),
-                            currentPage + 1, maxPaginatedPages,
-                            keyNext.withStyle(ChatFormatting.LIGHT_PURPLE))
-                            .withStyle(ChatFormatting.GRAY));
-                } else {
-                    components.addAll(paginatedTooltips.get(0));
-                }
-            }
-
-            if (!isShiftToolsEmpty) {
-                components.add(breakerLine);
-                components.add(showCapabilities);
-            }
-        };
     }
 
     @FunctionalInterface
     public interface ModelInitializer {
 
-        void configureModel(@NotNull DataGenContext<Block, ? extends Block> context,
-                            @NotNull GTBlockstateProvider provider,
-                            @NotNull MachineModelBuilder<BlockModelBuilder> builder);
+        void configureModel(DataGenContext<Block, ? extends Block> context,
+                            GTBlockstateProvider provider,
+                            MachineModelBuilder<BlockModelBuilder> builder);
 
         default ModelInitializer andThen(ModelInitializer after) {
             Objects.requireNonNull(after);
@@ -805,9 +693,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
 
         default ModelInitializer compose(UnaryOperator<MachineModelBuilder<BlockModelBuilder>> before) {
             Objects.requireNonNull(before);
-            return (ctx, prov, builder) -> {
-                this.configureModel(ctx, prov, before.apply(builder));
-            };
+            return (ctx, prov, builder) -> this.configureModel(ctx, prov, before.apply(builder));
         }
     }
 
@@ -843,10 +729,8 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
                 .item(properties -> builder.itemFactory.apply((IMachineBlock) block.get(), properties))
                 .setData(ProviderType.LANG, NonNullBiConsumer.noop()) // do not gen any lang keys
                 // copied from BlockBuilder#item
-                .model((ctx, prov) -> {
-                    prov.withExistingParent(ctx.getName(), new ResourceLocation(builder.registrate.getModid(),
-                        "block/machine/" + ctx.getName()));
-                })
+                .model((ctx, prov) -> prov.withExistingParent(ctx.getName(), new ResourceLocation(builder.registrate.getModid(),
+                    "block/machine/" + ctx.getName())))
                 .color(() -> () -> builder.itemColor::apply)
                 .properties(builder.itemProp);
         }
