@@ -958,6 +958,7 @@ public class LangHandler {
         provider.add("gtceu.universal.tooltip.requires_redstone", "§4Requires Redstone power");
         provider.add("gtceu.universal.tooltip.deprecated",
                 "§4§lWARNING:§r§4 DEPRECATED. WILL BE REMOVED IN A FUTURE VERSION.§r");
+        provider.add("gtceu.universal.tooltip.breaker", "§8-----------------------------------");
         provider.add("gtceu.recipe.total", "Total: %s EU");
         provider.add("gtceu.recipe.max_eu", "Max. EU: %s EU");
         provider.add("gtceu.recipe.eu", "Usage: %s EU/t");

@@ -4099,6 +4099,7 @@
   "gtceu.universal.tooltip.amperage_out_till": "§eAmperage OUT up to: §f%dA",
   "gtceu.universal.tooltip.base_production_eut": "§eBase Production: §f%d EU/t",
   "gtceu.universal.tooltip.base_production_fluid": "§eBase Production: §f%d mB/t",
+  "gtceu.universal.tooltip.breaker": "§8-----------------------------------",
   "gtceu.universal.tooltip.chunk_mode": "Chunk Mode: ",
   "gtceu.universal.tooltip.deprecated": "§4§lWARNING:§r§4 DEPRECATED. WILL BE REMOVED IN A FUTURE VERSION.§r",
   "gtceu.universal.tooltip.energy_storage_capacity": "§cEnergy Capacity: §r%d EU",

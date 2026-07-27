@@ -644,7 +644,12 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
             if (!isAvailableRecipeTypesEmpty) {
                 components.add(availableRecipeTypes);
             }
-            components.addAll(bottomTooltips);
+
+            if (!bottomTooltips.isEmpty()) {
+                components.add(Component.translatable("gtceu.universal.tooltip.breaker"));
+                components.addAll(bottomTooltips);
+            }
+
             if (tooltipBuilder != null) tooltipBuilder.accept(itemStack, components);
         });
 
@@ -684,6 +689,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
 
         Component showCapabilities = Component.translatable("gtceu.tooltip.show_capabilities");
         Component showCapabilitiesShift = Component.translatable("gtceu.tooltip.show_capabilities_shift");
+        Component breakerLine = Component.translatable("gtceu.universal.tooltip.breaker");
 
         for (RecipeModifier modifier : recipeModifier.modifiers()) {
             String modifierId = modifier.getId();
@@ -707,6 +713,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
                 var currentModifierPage = Math.floorMod(TooltipScrollHandler.getCurrentTooltipModifier(),
                         maxModifierPages);
 
+                components.add(breakerLine);
                 components.add(showCapabilitiesShift);
                 for (int i = 0; i < maxModifierPages; i++) {
                     if (i == currentModifierPage) {
@@ -733,6 +740,9 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
 
             if (!isPaginatedTooltipsEmpty) {
                 var currentPage = Math.floorMod(TooltipScrollHandler.getCurrentTooltipPage(), maxPaginatedPages);
+
+                components.add(breakerLine);
+
                 if (maxPaginatedPages > 1) {
                     components.addAll(paginatedTooltips.get(currentPage));
 
@@ -756,6 +766,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition> extends Builde
             }
 
             if (!isShiftToolsEmpty) {
+                components.add(breakerLine);
                 components.add(showCapabilities);
             }
         };
