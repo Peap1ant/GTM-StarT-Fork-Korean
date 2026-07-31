@@ -4928,7 +4928,7 @@
   "item.gtceu.tool.behavior.block_rotation": "§2메카닉: §f블록 회전",
   "item.gtceu.tool.behavior.crop_harvesting": "§a수확자: §f농작물 수확",
   "item.gtceu.tool.behavior.damage_boost": "§4대미지 부스트: §f%s을(를) 대상으로 추가 공격 피해",
-  "item.gtceu.tool.behavior.dowse_campfire": "§f소방관: §f Campfires",
+  "item.gtceu.tool.behavior.dowse_campfire": "§f소방관: §f모닥불의 불을 끌 수 있습니다.",
   "item.gtceu.tool.behavior.grass_path": "§e대지 다지기: 잔딧길을 생성 가능",
   "item.gtceu.tool.behavior.ground_tilling": "§e농사꾼: §f흙을 갈 수 있음",
   "item.gtceu.tool.behavior.plunger": "§9흡수: §f액체를 빨아들임",
