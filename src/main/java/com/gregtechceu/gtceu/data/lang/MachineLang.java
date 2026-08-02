@@ -693,6 +693,9 @@ public class MachineLang {
         provider.add("gtceu.multiblock.network_switch.description",
                 "The Network Switch is a multiblock structure used for distributing Computation from many sources to many destinations. It can accept any number of Computation Data Reception or Transmission Hatches. It is necessary for Research Data which requires much higher Computation, as the Research Station can only accept one Computation Data Reception Hatch. HPCAs must have a Bridge Component for the Network Switch to be able to access their Computation.");
 
+        provider.add("gtceu.multiblock.network_switch.receivers", "§7Receivers: §f%s");
+        provider.add("gtceu.multiblock.network_switch.transmitters", "§7Transmitters: §f%s");
+
         multiLang(provider, "gtceu.machine.high_performance_computation_array.tooltip",
                 "Just your average Supercomputer",
                 "Used to generate §fComputation§7 (and heat).",

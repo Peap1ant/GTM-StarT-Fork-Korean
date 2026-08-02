@@ -11,6 +11,8 @@ import com.gregtechceu.gtceu.api.machine.multiblock.MultiblockDisplayText;
 import com.gregtechceu.gtceu.api.machine.multiblock.PartAbility;
 import com.gregtechceu.gtceu.api.machine.trait.NotifiableComputationContainer;
 
+import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
+
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Block;
@@ -33,6 +35,14 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
 
     public static final int EUT_PER_HATCH = GTValues.VA[GTValues.IV];
 
+    @Getter
+    @DescSynced
+    private int receiversCount;
+
+    @Getter
+    @DescSynced
+    private int transmittersCount;
+
     private final MultipleComputationHandler computationHandler = new MultipleComputationHandler(this);
 
     public NetworkSwitchMachine(IMachineBlockEntity holder) {
@@ -52,7 +62,7 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                 ++transmitters;
             }
         }
-        return GTValues.VA[GTValues.IV] * (receivers + transmitters);
+        return EUT_PER_HATCH * (receivers + transmitters);
     }
 
     @Override
@@ -83,6 +93,8 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                 }
             }
         }
+        receiversCount = receivers.size();
+        transmittersCount = transmitters.size();
         computationHandler.onStructureForm(receivers, transmitters);
     }
 
@@ -90,6 +102,8 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     public void onStructureInvalid() {
         super.onStructureInvalid();
         computationHandler.reset();
+        receiversCount = 0;
+        transmittersCount = 0;
     }
 
     @Override
@@ -98,22 +112,26 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
     }
 
     @Override
-    public int requestCWUt(int cwut, boolean simulate, @NotNull Collection<IOpticalComputationProvider> seen) {
+    public int requestCWUt(int cwut, boolean simulate, Collection<IOpticalComputationProvider> seen) {
         seen.add(this);
         return isActive() && !getRecipeLogic().isWaiting() ? computationHandler.requestCWUt(cwut, simulate, seen) : 0;
     }
 
     @Override
-    public int getMaxCWUt(@NotNull Collection<IOpticalComputationProvider> seen) {
+    public int getMaxCWUt(Collection<IOpticalComputationProvider> seen) {
         seen.add(this);
         return isFormed() ? computationHandler.getMaxCWUt(seen) : 0;
     }
 
     // allows chaining Network Switches together
     @Override
-    public boolean canBridge(@NotNull Collection<IOpticalComputationProvider> seen) {
+    public boolean canBridge(Collection<IOpticalComputationProvider> seen) {
         seen.add(this);
         return true;
+    }
+
+    public int getMaxCWUtForDisplay() {
+        return computationHandler.getMaxCWUtForDisplay();
     }
 
     @Override
@@ -126,6 +144,17 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
                         "gtceu.multiblock.data_bank.providing")
                 .addPatternErrorLine(getMultiblockState().error)
                 .addEnergyUsageExactLine(getEnergyUsage())
+                .addCustom((components) -> {
+                    if (!isFormed()) return;
+                    // Receivers
+                    components.add(Component.translatable("gtceu.multiblock.network_switch.receivers", receiversCount));
+                })
+                .addCustom((components) -> {
+                    if (!isFormed()) return;
+                    // Transmitters
+                    components.add(
+                            Component.translatable("gtceu.multiblock.network_switch.transmitters", transmittersCount));
+                })
                 .addComputationUsageLine(computationHandler.getMaxCWUtForDisplay())
                 .addWorkingStatusLine();
     }
@@ -225,7 +254,7 @@ public class NetworkSwitchMachine extends DataBankMachine implements IOpticalCom
             return maximumCWUt;
         }
 
-        public int getMaxCWUt(@NotNull Collection<IOpticalComputationProvider> seen) {
+        public int getMaxCWUt(Collection<IOpticalComputationProvider> seen) {
             if (seen.contains(this)) return 0;
             // The max CWU/t that this Network Switch can provide, combining all its inputs.
             seen.add(this);

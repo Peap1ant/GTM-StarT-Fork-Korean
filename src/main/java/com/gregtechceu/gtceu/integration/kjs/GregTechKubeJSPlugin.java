@@ -210,16 +210,21 @@ public class GregTechKubeJSPlugin extends KubeJSPlugin {
     }
 
     // Fake a data provider for the GT model builders so we don't need to handle this ourselves in any way :3
-    public static RuntimeBlockStateProvider RUNTIME_BLOCKSTATE_PROVIDER = new RuntimeBlockStateProvider(
-            GTRegistration.REGISTRATE, new PackOutput(KubeJSPaths.DIRECTORY),
-            (loc, json) -> {
-                if (!loc.getPath().endsWith(".json")) {
-                    loc = loc.withSuffix(".json");
-                }
-                GTDynamicResourcePack.addResource(loc, json);
-            });
+    // Lazily initialized to avoid loading client-only classes (e.g. net.minecraft.client.Minecraft)
+    // on dedicated servers, which causes ClassMetadataNotFoundException and crashes KubeJS plugin loading.
+    public static RuntimeBlockStateProvider RUNTIME_BLOCKSTATE_PROVIDER;
 
     public static void generateMachineBlockModels() {
+        if (RUNTIME_BLOCKSTATE_PROVIDER == null) {
+            RUNTIME_BLOCKSTATE_PROVIDER = new RuntimeBlockStateProvider(
+                    GTRegistration.REGISTRATE, new PackOutput(KubeJSPaths.DIRECTORY),
+                    (loc, json) -> {
+                        if (!loc.getPath().endsWith(".json")) {
+                            loc = loc.withSuffix(".json");
+                        }
+                        GTDynamicResourcePack.addResource(loc, json);
+                    });
+        }
         GTRegistryInfo.ALL_BUILDERS.forEach(builderBase -> {
             try {
                 builderBase.generateAssetJsons(null);
@@ -561,7 +566,8 @@ public class GregTechKubeJSPlugin extends KubeJSPlugin {
         }
         if (gtRecipe.getValue(GTRecipeSchema.CONDITIONS) != null) {
             builder.conditions.addAll(Arrays.stream(gtRecipe.getValue(GTRecipeSchema.CONDITIONS)).toList());
-            builder.recipeType.setMinRecipeConditions(builder.conditions.size());
+            builder.recipeType.setMinRecipeConditions(
+                    (int) builder.conditions.stream().filter(RecipeCondition::isXeiVisible).count());
         }
         if (gtRecipe.getValue(GTRecipeSchema.CATEGORY) != null) {
             builder.recipeCategory = GTRegistries.RECIPE_CATEGORIES.get(gtRecipe.getValue(GTRecipeSchema.CATEGORY));

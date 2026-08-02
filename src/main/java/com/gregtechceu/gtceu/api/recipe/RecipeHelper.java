@@ -251,8 +251,8 @@ public class RecipeHelper {
      */
     public static ActionResult checkConditions(GTRecipe recipe, @NotNull RecipeLogic recipeLogic) {
         if (recipe.conditions.isEmpty()) return ActionResult.SUCCESS;
-        Map<RecipeConditionType<?>, List<RecipeCondition>> or = new Reference2ObjectArrayMap<>();
-        for (RecipeCondition condition : recipe.conditions) {
+        Map<RecipeConditionType<?>, List<RecipeCondition<?>>> or = new Reference2ObjectArrayMap<>();
+        for (RecipeCondition<?> condition : recipe.conditions) {
             if (condition.isOr()) {
                 or.computeIfAbsent(condition.getType(), type -> new ArrayList<>()).add(condition);
             } else if (!condition.check(recipe, recipeLogic)) {
@@ -262,11 +262,11 @@ public class RecipeHelper {
             }
         }
 
-        for (List<RecipeCondition> conditions : or.values()) {
+        for (List<RecipeCondition<?>> conditions : or.values()) {
             boolean passed = conditions.isEmpty();
             MutableComponent component = Component.translatable("gtceu.recipe_logic.condition_fails")
                     .append(": ");
-            for (RecipeCondition condition : conditions) {
+            for (RecipeCondition<?> condition : conditions) {
                 passed = condition.check(recipe, recipeLogic);
                 if (passed) break;
                 else component.append(condition.getTooltips());
