@@ -312,6 +312,7 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     @Override
     public void addDisplayText(List<Component> textList) {
         MultiblockDisplayText.builder(textList, isFormed())
+                .addPatternErrorLine(getMultiblockState().error)
                 .setWorkingStatus(true, hpcaHandler.getAllocatedCWUt() > 0) // transform into two-state system for
                                                                             // display
                 .setWorkingStatusKeys(
@@ -346,6 +347,10 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
 
     public int getMaxCoolingDemand() {
         return hpcaHandler.getMaxCoolingDemand();
+    }
+
+    public int getMaxCoolantDemand() {
+        return hpcaHandler.getMaxCoolantDemand();
     }
 
     public int getNumBridges() {

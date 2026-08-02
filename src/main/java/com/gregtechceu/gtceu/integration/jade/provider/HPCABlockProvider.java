@@ -31,18 +31,19 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
     public void appendTooltip(ITooltip iTooltip, BlockAccessor blockAccessor, IPluginConfig iPluginConfig) {
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
-            if (machine instanceof HPCAMachine hpca) {
+            if (machine instanceof HPCAMachine && blockAccessor.getServerData().getBoolean("isFormed")) {
                 long energyUsage = blockAccessor.getServerData().getLong("energyUsage");
                 int CWUt = blockAccessor.getServerData().getInt("CWUt");
                 int numBridges = blockAccessor.getServerData().getInt("numBridges");
                 int maxCoolingDemand = blockAccessor.getServerData().getInt("maxCoolingDemand");
                 int maxCoolingAmount = blockAccessor.getServerData().getInt("maxCoolingAmount");
+                int maxCoolantAmount = blockAccessor.getServerData().getInt("maxCoolantAmount");
 
                 Component voltageText = getEnergyUsage(energyUsage);
                 Component cwutInfo = getCWUtProductionComponent(CWUt);
                 Component coolingInfo = getCoolingComponent(maxCoolingAmount, maxCoolingDemand);
                 Component coolingAvailableInfo = getCoolingAvailableComponent(maxCoolingAmount, maxCoolingDemand);
-                Component coolantRequiredInfo = getCoolantRequiredComponent(maxCoolingDemand);
+                Component coolantRequiredInfo = getCoolantRequiredComponent(maxCoolantAmount);
                 Component bridgingInfo = getBridgingComponent(numBridges);
 
                 iTooltip.add(voltageText);
@@ -60,11 +61,13 @@ public class HPCABlockProvider implements IBlockComponentProvider, IServerDataPr
         if (blockAccessor.getBlockEntity() instanceof IMachineBlockEntity blockEntity) {
             MetaMachine machine = blockEntity.getMetaMachine();
             if (machine instanceof HPCAMachine hpca) {
+                compoundTag.putBoolean("isFormed", hpca.isFormed());
                 compoundTag.putLong("energyUsage", hpca.getEnergyUsage());
                 compoundTag.putInt("CWUt", hpca.getMaxCWUt());
                 compoundTag.putInt("numBridges", hpca.getNumBridges());
                 compoundTag.putInt("maxCoolingDemand", hpca.getMaxCoolingDemand());
                 compoundTag.putInt("maxCoolingAmount", hpca.getMaxCoolingAmount());
+                compoundTag.putInt("maxCoolantDemand", hpca.getMaxCoolantDemand());
             }
         }
     }

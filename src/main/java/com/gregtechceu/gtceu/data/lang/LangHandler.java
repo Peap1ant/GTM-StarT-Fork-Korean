@@ -1203,6 +1203,7 @@ public class LangHandler {
         provider.add("gtceu.multiblock.preview.rotate", "Click and drag to rotate");
         provider.add("gtceu.multiblock.preview.select", "Right-click to check candidates");
         provider.add("gtceu.multiblock.pattern.error", "Expected components (%s) at (%s).");
+        provider.add("gtceu.multiblock.pattern.error.limited_title", "Unexpected number of %s:");
         provider.add("gtceu.multiblock.pattern.error.limited_exact", "§cExactly: %d§r");
         provider.add("gtceu.multiblock.pattern.error.limited_within", "§cBetween %d and %d§r");
         multiLang(provider, "gtceu.multiblock.pattern.error.limited", "§cMaximum: %d§r", "§cMinimum: %d§r",
@@ -1305,6 +1306,7 @@ public class LangHandler {
         provider.add("config.jade.plugin_gtceu.me_pattern_buffer_proxy", "[GTCEu] Pattern Buffer Proxy Info");
         provider.add("config.jade.plugin_gtceu.energy_converter_provider", "[GTCEu] Energy Converter Mode");
         provider.add("config.jade.plugin_gtceu.ldp_endpoint", "[GTCEu] Long Distance Pipeline Endpoint Info");
+        provider.add("config.jade.plugin_gtceu.network_switch", "[GTCEu] Network Switch Info");
         provider.add("config.jade.plugin_gtceu.hpca", "[GTCEu] HPCA Info");
 
         // gui
