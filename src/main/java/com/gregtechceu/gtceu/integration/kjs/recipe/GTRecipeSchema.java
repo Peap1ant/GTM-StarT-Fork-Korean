@@ -219,14 +219,14 @@ public interface GTRecipeSchema {
             if (tier >= values.length) {
                 throw new RecipeExceptionJS(String.format("Invalid voltage tier %s for recipe: %s", tier, id));
             }
-            return EUt(new EnergyStack.WithIO(new EnergyStack(values[Math.abs(tier)]), (isGenerator) ? IO.IN : IO.OUT));
+            return EUt(new EnergyStack.WithIO(new EnergyStack(values[Math.abs(tier)]), (isGenerator) ? IO.OUT : IO.IN));
         }
 
         private GTRecipeJS tieredEUtBuilderMethod(long[] values, int tier, boolean isGenerator) {
             if (tier >= values.length) {
                 throw new RecipeExceptionJS(String.format("Invalid voltage tier %s for recipe: %s", tier, id));
             }
-            return EUt(new EnergyStack.WithIO(new EnergyStack(values[Math.abs(tier)]), (isGenerator) ? IO.IN : IO.OUT));
+            return EUt(new EnergyStack.WithIO(new EnergyStack(values[Math.abs(tier)]), (isGenerator) ? IO.OUT : IO.IN));
         }
 
         public GTRecipeJS EUtV(int tier, boolean isGenerator) {
