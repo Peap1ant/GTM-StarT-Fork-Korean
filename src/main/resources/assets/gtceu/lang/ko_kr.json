@@ -4139,7 +4139,7 @@
   "gtceu.universal.tooltip.working_area_chunks_max": "§b최대 작동 범위: §f%dx%d",
   "gtceu.universal.tooltip.working_area_max": "§b최대 작동 범위: §f%dx%d 청크",
   "gtceu.vacuum_freezer": "진공 빙결기",
-  "gtceu.wiremill": "와이어 제작기",x
+  "gtceu.wiremill": "와이어 제작기",
   "gui.gtceu.refund_all.desc": "저장된 내용물 전부 AE2로 전송됨",
   "gui.gtceu.rename.desc": "패턴 버퍼 이름 바꾸기",
   "gui.gtceu.share_inventory.desc.0": "버퍼 안에 있는 아이템은 모든 패턴이 공유합니다!",
