@@ -36,7 +36,8 @@ jobs:
         run: ./gradlew build
       - name: Publish to Maven
         if: ${{ github.repository_owner == 'StarT-Dev-Team' && env.PUBLISH == 'true' }}
-        run: ./gradlew publish
+        continue-on-error: true
+        run: ./gradlew publish || echo "⚠️ Maven publish failed (e.g. server dropped connection), continuing workflow..."
       - name: Rename Jars
         if: ${{ env.PUBLISH == 'true' }}
         run: for file in build/libs/*; do mv "$file" "${file/SHOT/SHOT+$(date --utc '+%Y%m%d-%H%M%S')-${{ env.VERSION_SUFFIX }}}"; done;

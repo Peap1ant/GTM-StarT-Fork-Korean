@@ -2,7 +2,6 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             artifactId = base.archivesName.get()
-            artifact(reobfSlimJar)
             from components.java
         }
     }
@@ -12,9 +11,10 @@ publishing {
         // Add repositories to publish to here.
         maven {
             url = version.toString().endsWith("-SNAPSHOT") ? "https://repo.expandium.net/snapshots" : "https://repo.expandium.net/releases"
+            allowInsecureProtocol = true
             credentials {
-                username = System.getenv("MAVEN_USER")
-                password = System.getenv("MAVEN_TOKEN")
+                username = System.getenv("MAVEN_USER") ?: ""
+                password = System.getenv("MAVEN_TOKEN") ?: ""
             }
         }
     }
